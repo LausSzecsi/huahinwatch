@@ -89,6 +89,13 @@ const HuaHinWatch = () => {
     return '#64748b';
   };
 
+  const getStatusLabel = (status) => {
+    if (status === 'normal') return '✓ Normal';
+    if (status === 'warning') return '⚠ Warning';
+    if (status === 'critical') return '✕ Outage';
+    return 'Unknown';
+  };
+
   const tideData = getTideData();
 
   return (
@@ -100,26 +107,23 @@ const HuaHinWatch = () => {
               <h1 style={{ fontSize: '1.8rem', fontWeight: '900', margin: '0', color: '#0066cc' }}>HUA HIN WATCH</h1>
               <p style={{ fontSize: '0.85rem', color: '#666', margin: '0' }}>Sawasdee! Community reports, live info and resources for Hua Hin</p>
             </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <select style={{ padding: '6px 10px', border: '1px solid #ddd', borderRadius: '15px', background: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}><option>EN</option><option>ไทย</option></select>
-              <button style={{ padding: '6px 12px', border: '1px solid #ddd', borderRadius: '15px', background: '#fff', cursor: 'pointer' }}>🌙</button>
-            </div>
+            <button style={{ padding: '6px 12px', border: '1px solid #ddd', borderRadius: '15px', background: '#fff', cursor: 'pointer' }}>🌙</button>
           </div>
 
           <nav style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             {['Home', 'Power Status', 'Report outage', 'Live cams', 'Tides', 'Guides', 'Travel'].map(label => (
               <button
                 key={label}
-                onClick={() => setCurrentPage(label.toLowerCase().replace(' ', '_'))}
+                onClick={() => setCurrentPage(label.toLowerCase().replace(/\s/g, '_'))}
                 style={{
                   padding: '8px 18px',
-                  background: currentPage === label.toLowerCase().replace(' ', '_') ? '#0066cc' : '#fff',
-                  color: currentPage === label.toLowerCase().replace(' ', '_') ? '#fff' : '#1a1a1a',
-                  border: currentPage === label.toLowerCase().replace(' ', '_') ? 'none' : '1px solid #ddd',
+                  background: currentPage === label.toLowerCase().replace(/\s/g, '_') ? '#0066cc' : '#fff',
+                  color: currentPage === label.toLowerCase().replace(/\s/g, '_') ? '#fff' : '#1a1a1a',
+                  border: currentPage === label.toLowerCase().replace(/\s/g, '_') ? 'none' : '1px solid #ddd',
                   borderRadius: '20px',
                   cursor: 'pointer',
                   fontSize: '0.9rem',
-                  fontWeight: currentPage === label.toLowerCase().replace(' ', '_') ? '600' : '500',
+                  fontWeight: currentPage === label.toLowerCase().replace(/\s/g, '_') ? '600' : '500',
                 }}
               >
                 {label}
@@ -140,7 +144,7 @@ const HuaHinWatch = () => {
                   <p style={{ fontSize: '1rem', color: '#1a1a1a', margin: '0 0 25px 0', lineHeight: '1.6' }}>Discover beaches, viewpoints, markets and travel basics for Hua Hin. Check live power status, see tides, cams and community resources.</p>
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     {['Power Status', 'Report outage', 'Live cams', 'Tides'].map(label => (
-                      <button key={label} onClick={() => setCurrentPage(label.toLowerCase().replace(' ', '_'))} style={{ padding: '10px 20px', background: '#fff', border: '1px solid #bbb', borderRadius: '20px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '500' }}>{label}</button>
+                      <button key={label} onClick={() => setCurrentPage(label.toLowerCase().replace(/\s/g, '_'))} style={{ padding: '10px 20px', background: '#fff', border: '1px solid #bbb', borderRadius: '20px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '500' }}>{label}</button>
                     ))}
                   </div>
                 </div>
@@ -177,30 +181,74 @@ const HuaHinWatch = () => {
           </div>
         )}
 
-        {/* POWER STATUS - HEATMAP */}
+        {/* POWER STATUS - INTERACTIVE MAP */}
         {currentPage === 'power_status' && (
           <div>
             <h2 style={{ fontSize: '2rem', fontWeight: '700', margin: '0 0 30px 0' }}>⚡ Power Status Map</h2>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px', marginBottom: '30px' }}>
+            {/* LEAFLET MAP */}
+            <div style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', marginBottom: '30px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', height: '500px', position: 'relative' }}>
+              <div id="map" style={{ width: '100%', height: '100%', background: '#e0e0e0' }}>
+                <svg style={{ width: '100%', height: '100%' }} viewBox="0 0 800 500">
+                  {/* Light map background */}
+                  <rect width="800" height="500" fill="#e8f4f8" />
+                  
+                  {/* Simplified coast outline */}
+                  <path d="M 0,200 Q 50,150 100,180 T 200,200 L 200,0 L 0,0 Z" fill="#d4e8f0" stroke="#999" strokeWidth="1" />
+                  
+                  {/* Hua Hin coast */}
+                  <path d="M 200,200 L 700,250 L 700,500 L 200,500 Z" fill="#c8e0eb" />
+                  <path d="M 200,200 L 700,250" stroke="#999" strokeWidth="1" />
+                  
+                  {/* Grid/reference */}
+                  <line x1="200" y1="0" x2="200" y2="500" stroke="#ddd" strokeWidth="1" />
+                  
+                  {/* Area markers with status colors */}
+                  {huaHinAreas.map(area => {
+                    const x = 250 + (area.lng - 100.0) * 200;
+                    const y = 250 + (12.6 - area.lat) * 100;
+                    return (
+                      <g key={area.id}>
+                        <circle cx={x} cy={y} r="18" fill={getStatusColor(area.status)} opacity="0.8" />
+                        <circle cx={x} cy={y} r="18" fill="none" stroke={getStatusColor(area.status)} strokeWidth="2" />
+                        <text x={x} y={y + 25} textAnchor="middle" fontSize="11" fontWeight="600" fill="#333">{area.name.split(' ')[0]}</text>
+                      </g>
+                    );
+                  })}
+                  
+                  {/* Legend */}
+                  <g>
+                    <text x="20" y="40" fontSize="14" fontWeight="600" fill="#333">Status</text>
+                    <circle cx="30" cy="60" r="8" fill="#10b981" />
+                    <text x="45" y="65" fontSize="12" fill="#333">Normal</text>
+                    <circle cx="30" cy="85" r="8" fill="#f59e0b" />
+                    <text x="45" y="90" fontSize="12" fill="#333">Warning</text>
+                    <circle cx="30" cy="110" r="8" fill="#ef4444" />
+                    <text x="45" y="115" fontSize="12" fill="#333">Outage</text>
+                  </g>
+                </svg>
+              </div>
+            </div>
+
+            {/* AREA GRID */}
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 20px 0' }}>Area Details</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px', marginBottom: '30px' }}>
               {huaHinAreas.map(area => (
-                <div key={area.id} style={{
-                  background: getStatusColor(area.status),
-                  borderRadius: '8px',
-                  padding: '20px',
-                  color: '#fff',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s',
-                }}>
-                  <p style={{ fontSize: '0.85rem', margin: '0 0 8px 0', opacity: 0.9 }}>{area.name}</p>
-                  <p style={{ fontSize: '0.7rem', margin: '0', opacity: 0.8 }}>
-                    {area.status === 'normal' ? '✓ Normal' : area.status === 'warning' ? '⚠ Warning' : '✕ Outage'}
-                  </p>
+                <div key={area.id} style={{ background: '#fff', borderRadius: '12px', padding: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', borderLeft: `4px solid ${getStatusColor(area.status)}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                    <div>
+                      <h4 style={{ fontSize: '1rem', fontWeight: '600', margin: '0 0 8px 0' }}>{area.name}</h4>
+                      <p style={{ fontSize: '0.85rem', color: '#666', margin: '0 0 8px 0' }}>📍 {area.lat.toFixed(3)}, {area.lng.toFixed(3)}</p>
+                    </div>
+                    <span style={{ padding: '4px 12px', background: getStatusColor(area.status), color: '#fff', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '600' }}>
+                      {getStatusLabel(area.status)}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
 
+            {/* RECENT REPORTS */}
             <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
               <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 15px 0' }}>Recent Reports ({outageReports.length})</h3>
               {outageReports.length === 0 ? (
@@ -209,7 +257,7 @@ const HuaHinWatch = () => {
                 <div style={{ display: 'grid', gap: '12px' }}>
                   {outageReports.slice(0, 5).map(report => (
                     <div key={report.id} style={{ padding: '12px', background: '#f5f5f5', borderRadius: '8px', borderLeft: '4px solid #ef4444' }}>
-                      <p style={{ fontWeight: '600', margin: '0 0 5px 0' }}>{report.area}</p>
+                      <p style={{ fontWeight: '600', margin: '0 0 5px 0' }}>{report.area} {report.time && `@ ${report.time}`}</p>
                       <p style={{ fontSize: '0.85rem', color: '#666', margin: '0' }}>{report.description}</p>
                     </div>
                   ))}
