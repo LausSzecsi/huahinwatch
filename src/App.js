@@ -4,7 +4,6 @@ import { Home, Zap, MessageSquare, BookOpen, Plane, Waves } from 'lucide-react';
 const HuaHinWatch = () => {
   const [currentPage, setCurrentPage] = useState('home');
   const [weatherData, setWeatherData] = useState(null);
-  const [tideData, setTideData] = useState(null);
   const [outageReports, setOutageReports] = useState([]);
   const [newReport, setNewReport] = useState({ area: '', description: '' });
   const [time, setTime] = useState(new Date());
@@ -21,35 +20,20 @@ const HuaHinWatch = () => {
     { id: 8, name: 'Railway Station', lat: 12.548, lng: 100.055, status: 'normal' },
   ];
 
-  // Mock tide data for Hua Hin (realistic times)
-  const generateTideData = () => {
+  const getTideData = () => {
     const now = new Date();
     const hour = now.getHours();
-    const minute = now.getMinutes();
+    const timeInMinutes = (hour % 12) * 60;
+    const tidePhase = Math.sin((timeInMinutes / 720) * Math.PI);
+    const tideHeight = 1.2 + (tidePhase * 0.8);
 
-    // Hua Hin typical tide pattern (semi-diurnal)
-    const tides = [
-      { time: '00:30', type: 'High', height: 2.1 },
-      { time: '06:45', type: 'Low', height: 0.3 },
-      { time: '13:00', type: 'High', height: 2.0 },
-      { time: '19:15', type: 'Low', height: 0.4 },
-    ];
-
-    // Find current tide position
     let currentTide = 'Mid-Tide';
-    let tideHeight = 1.0;
-    let tidePhase = 0.5;
-
-    const timeInMinutes = (hour % 12) * 60 + minute;
-    tidePhase = Math.sin((timeInMinutes / 720) * Math.PI);
-    tideHeight = 1.2 + (tidePhase * 0.8);
-
     if (tidePhase > 0.7) currentTide = 'High Tide';
     else if (tidePhase < 0.3) currentTide = 'Low Tide';
     else if (tidePhase > 0.4) currentTide = 'Rising';
     else currentTide = 'Falling';
 
-    return { tides, currentTide, tideHeight, tidePhase };
+    return { currentTide, tideHeight, tidePhase };
   };
 
   useEffect(() => {
@@ -61,12 +45,8 @@ const HuaHinWatch = () => {
     const timer = setInterval(() => {
       const newTime = new Date();
       setTime(newTime);
-      
-      // Auto-switch theme based on sunrise/sunset (approximate for Hua Hin)
       const hour = newTime.getHours();
       setIsDarkMode(hour < 6 || hour > 18);
-      
-      setTideData(generateTideData());
     }, 1000);
     return () => clearInterval(timer);
   }, []);
@@ -140,49 +120,7 @@ const HuaHinWatch = () => {
     return labels[status] || 'Unknown';
   };
 
-  const TideWaveVisualization = ({ tideData }) => {
-    if (!tideData) return null;
-
-    const wavePoints = [];
-    for (let x = 0; x <= 100; x += 2) {
-      const y = 50 + Math.sin((x / 100) * Math.PI * 2 + Date.now() / 1000) * 15 + (tideData.tidePhase - 0.5) * 30;
-      wavePoints.push(`${x},${y}`);
-    }
-    const pathData = `M${wavePoints.join(' L')} L100,100 L0,100 Z`;
-
-    return (
-      <div style={{ marginBottom: '25px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-          <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: '0' }}>🌊 Tide Status</h3>
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: '1.5rem', fontWeight: '900', margin: '0', color: '#06b6d4' }}>{tideData.currentTide}</p>
-            <p style={{ fontSize: '0.85rem', color: isDarkMode ? '#94a3b8' : '#666', margin: '0' }}>Height: {tideData.tideHeight.toFixed(1)}m</p>
-          </div>
-        </div>
-
-        <svg viewBox="0 0 100 100" style={{ width: '100%', height: '250px', background: isDarkMode ? 'rgba(15, 23, 42, 0.6)' : 'rgba(200, 220, 240, 0.2)', borderRadius: '12px', border: `2px solid ${isDarkMode ? '#475569' : '#cbd5e1'}` }} preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="waveGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style={{ stopColor: '#06b6d4', stopOpacity: 0.8 }} />
-              <stop offset="100%" style={{ stopColor: '#06b6d4', stopOpacity: 0.2 }} />
-            </linearGradient>
-          </defs>
-          <path d={pathData} fill="url(#waveGradient)" opacity="0.8" />
-          <circle cx={tideData.tidePhase * 100} cy={50 + (tideData.tidePhase - 0.5) * 30} r="3" fill="#ef4444" stroke="white" strokeWidth="1" />
-        </svg>
-
-        <div style={{ marginTop: '15px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
-          {tideData.tides.slice(0, 4).map((tide, idx) => (
-            <div key={idx} style={{ padding: '12px', background: isDarkMode ? 'rgba(15, 23, 42, 0.4)' : 'rgba(255, 255, 255, 0.5)', borderRadius: '8px', textAlign: 'center' }}>
-              <p style={{ fontSize: '0.8rem', color: isDarkMode ? '#94a3b8' : '#666', margin: '0 0 5px 0' }}>{tide.type}</p>
-              <p style={{ fontSize: '0.95rem', fontWeight: '700', margin: '0' }}>{tide.time}</p>
-              <p style={{ fontSize: '0.85rem', color: isDarkMode ? '#64748b' : '#999', margin: '5px 0 0 0' }}>{tide.height}m</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
+  const tideData = getTideData();
 
   return (
     <div style={{
@@ -190,7 +128,6 @@ const HuaHinWatch = () => {
       color: isDarkMode ? '#f1f5f9' : '#1a1a1a',
       minHeight: '100vh',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      padding: '0',
       transition: 'background 0.5s ease, color 0.5s ease',
     }}>
       <header style={{
@@ -259,25 +196,6 @@ const HuaHinWatch = () => {
       </header>
 
       <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '30px 20px' }}>
-        {/* TIDES PAGE */}
-        {currentPage === 'tides' && tideData && (
-          <div>
-            <TideWaveVisualization tideData={tideData} />
-            
-            <div style={{
-              background: isDarkMode ? 'rgba(15, 23, 42, 0.6)' : 'rgba(255, 255, 255, 0.7)',
-              border: `2px solid ${isDarkMode ? '#475569' : '#cbd5e1'}`,
-              borderRadius: '12px',
-              padding: '25px',
-            }}>
-              <h2 style={{ fontSize: '1.3rem', fontWeight: '700', margin: '0 0 15px 0' }}>📚 Tide Info</h2>
-              <p style={{ color: isDarkMode ? '#cbd5e1' : '#666', lineHeight: '1.8', margin: '0' }}>
-                Hua Hin experiences semi-diurnal tides with significant tidal range. The bay's geography creates some of Thailand's most dramatic tide changes. High tides can exceed 2 meters, making beach access and water activities highly time-dependent. Check the tide status before planning water activities, boat trips, or beach exploration.
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* HOME PAGE */}
         {currentPage === 'home' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
@@ -308,8 +226,12 @@ const HuaHinWatch = () => {
               padding: '25px',
             }}>
               <h2 style={{ fontSize: '1.3rem', fontWeight: '700', margin: '0 0 15px 0' }}>🌊 Tides</h2>
-              <p style={{ color: isDarkMode ? '#94a3b8' : '#666', margin: '0 0 15px 0' }}>Check live tide status and plan your beach activities</p>
-              <button onClick={() => setCurrentPage('tides')} style={{ padding: '10px 15px', background: isDarkMode ? '#3b82f6' : '#0284c7', border: 'none', color: 'white', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>View Tide Chart →</button>
+              <p style={{ color: isDarkMode ? '#94a3b8' : '#666', margin: '0 0 15px 0' }}>Check tide status for beach & water activities</p>
+              <div style={{ display: 'grid', gap: '10px' }}>
+                <p style={{ fontSize: '1.1rem', fontWeight: '700', color: '#06b6d4', margin: '0' }}>{tideData.currentTide}</p>
+                <p style={{ fontSize: '0.95rem', margin: '0' }}>Height: {tideData.tideHeight.toFixed(1)}m</p>
+                <button onClick={() => setCurrentPage('tides')} style={{ padding: '10px 15px', background: isDarkMode ? '#3b82f6' : '#0284c7', border: 'none', color: 'white', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>View Tides →</button>
+              </div>
             </div>
 
             <div style={{
@@ -330,6 +252,65 @@ const HuaHinWatch = () => {
                   <p style={{ fontSize: '1rem', color: '#10b981', fontWeight: '600', margin: '0' }}>✓ No outages reported</p>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* TIDES PAGE */}
+        {currentPage === 'tides' && (
+          <div style={{
+            background: isDarkMode ? 'rgba(15, 23, 42, 0.6)' : 'rgba(255, 255, 255, 0.7)',
+            border: `2px solid ${isDarkMode ? '#475569' : '#cbd5e1'}`,
+            borderRadius: '12px',
+            padding: '25px',
+          }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '700', margin: '0 0 20px 0' }}>🌊 Tide Status</h2>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px', marginBottom: '25px' }}>
+              <div style={{ padding: '15px', background: isDarkMode ? 'rgba(6, 182, 212, 0.1)' : 'rgba(6, 182, 212, 0.1)', border: `2px solid #06b6d4`, borderRadius: '8px' }}>
+                <p style={{ color: isDarkMode ? '#94a3b8' : '#666', fontSize: '0.85rem', margin: '0 0 5px 0' }}>Current Status</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: '900', color: '#06b6d4', margin: '0' }}>{tideData.currentTide}</p>
+                <p style={{ fontSize: '0.85rem', color: isDarkMode ? '#64748b' : '#999', margin: '5px 0 0 0' }}>{tideData.tideHeight.toFixed(1)}m</p>
+              </div>
+              <div style={{ padding: '15px', background: isDarkMode ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.1)', border: `2px solid #10b981`, borderRadius: '8px' }}>
+                <p style={{ color: isDarkMode ? '#94a3b8' : '#666', fontSize: '0.85rem', margin: '0 0 5px 0' }}>High Tide</p>
+                <p style={{ fontSize: '1.1rem', fontWeight: '700', margin: '0' }}>13:00</p>
+                <p style={{ fontSize: '0.85rem', color: isDarkMode ? '#64748b' : '#999', margin: '5px 0 0 0' }}>2.0m</p>
+              </div>
+              <div style={{ padding: '15px', background: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.1)', border: `2px solid #ef4444`, borderRadius: '8px' }}>
+                <p style={{ color: isDarkMode ? '#94a3b8' : '#666', fontSize: '0.85rem', margin: '0 0 5px 0' }}>Low Tide</p>
+                <p style={{ fontSize: '1.1rem', fontWeight: '700', margin: '0' }}>06:45</p>
+                <p style={{ fontSize: '0.85rem', color: isDarkMode ? '#64748b' : '#999', margin: '5px 0 0 0' }}>0.3m</p>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '25px' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: '0 0 15px 0' }}>Today's Tide Times</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                {[
+                  { time: '00:30', type: 'High Tide', height: '2.1m' },
+                  { time: '06:45', type: 'Low Tide', height: '0.3m' },
+                  { time: '13:00', type: 'High Tide', height: '2.0m' },
+                  { time: '19:15', type: 'Low Tide', height: '0.4m' },
+                ].map((tide, idx) => (
+                  <div key={idx} style={{ padding: '15px', background: isDarkMode ? 'rgba(15, 23, 42, 0.4)' : 'rgba(255, 255, 255, 0.5)', border: `1px solid ${isDarkMode ? '#475569' : '#cbd5e1'}`, borderRadius: '8px' }}>
+                    <p style={{ color: isDarkMode ? '#94a3b8' : '#666', fontSize: '0.85rem', margin: '0 0 5px 0' }}>{tide.type}</p>
+                    <p style={{ fontSize: '1.1rem', fontWeight: '700', margin: '0 0 5px 0' }}>{tide.time}</p>
+                    <p style={{ color: isDarkMode ? '#64748b' : '#999', fontSize: '0.85rem', margin: '0' }}>{tide.height}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{
+              background: isDarkMode ? 'rgba(15, 23, 42, 0.4)' : 'rgba(255, 255, 255, 0.5)',
+              border: `1px solid ${isDarkMode ? '#475569' : '#cbd5e1'}`,
+              borderRadius: '8px',
+              padding: '15px',
+            }}>
+              <p style={{ color: isDarkMode ? '#cbd5e1' : '#1a1a1a', margin: '0', lineHeight: '1.6' }}>
+                Hua Hin has semi-diurnal tides with significant tidal range. High tides can exceed 2 meters. Plan beach activities and boat trips accordingly.
+              </p>
             </div>
           </div>
         )}
@@ -391,8 +372,8 @@ const HuaHinWatch = () => {
         {currentPage === 'guides' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
             {[
-              { title: 'Decathlon Beach', desc: 'Popular water sports beach with calm waters and easy beach access.' },
-              { title: 'Night Bazaar', desc: 'Weekend night market with street food, crafts and local vibes.' },
+              { title: 'Decathlon Beach', desc: 'Popular water sports beach with calm waters and easy access.' },
+              { title: 'Night Bazaar', desc: 'Weekend night market with street food, crafts and local atmosphere.' },
               { title: 'Petchkasem Road', desc: 'Main coastal highway with shops, restaurants and viewpoints.' },
               { title: 'Takiab Beach', desc: 'Quieter northern beach with scenic viewpoint and local cafes.' },
               { title: 'Cicada Market', desc: 'Popular night market (weekends) with local food and crafts.' },
