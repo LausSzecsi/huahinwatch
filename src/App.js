@@ -5,6 +5,7 @@ const HuaHinWatch = () => {
   const [weatherData, setWeatherData] = useState(null);
   const [outageReports, setOutageReports] = useState([]);
   const [newReport, setNewReport] = useState({ area: '', description: '', time: '' });
+  const [mapReady, setMapReady] = useState(false);
 
   const huaHinAreas = [
     { id: 1, name: 'Decathlon Beach', lat: 12.551, lng: 100.058, status: 'normal' },
@@ -59,6 +60,54 @@ const HuaHinWatch = () => {
     const interval = setInterval(fetchWeather, 10 * 60000);
     return () => clearInterval(interval);
   }, []);
+
+  // Initialize Leaflet map
+  useEffect(() => {
+    if (currentPage === 'power_status' && !mapReady) {
+      // Load Leaflet CSS
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+      document.head.appendChild(link);
+
+      // Load Leaflet JS
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+      script.onload = () => {
+        if (document.getElementById('map') && window.L) {
+          const map = window.L.map('map').setView([12.5557, 100.0604], 13);
+          
+          window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19,
+          }).addTo(map);
+
+          // Add markers for each area
+          huaHinAreas.forEach(area => {
+            const color = area.status === 'normal' ? '#10b981' : area.status === 'warning' ? '#f59e0b' : '#ef4444';
+            const html = `
+              <div style="background: ${color}; width: 32px; height: 32px; border-radius: 50%; border: 3px solid ${color}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px; cursor: pointer;">
+                ${area.status === 'normal' ? '✓' : area.status === 'warning' ? '⚠' : '✕'}
+              </div>
+            `;
+            
+            const icon = window.L.divIcon({
+              html: html,
+              className: 'custom-marker',
+              iconSize: [32, 32],
+            });
+
+            window.L.marker([area.lat, area.lng], { icon: icon })
+              .bindPopup(`<strong>${area.name}</strong><br/>${area.status === 'normal' ? '✓ Normal' : area.status === 'warning' ? '⚠ Warning' : '✕ Outage'}`)
+              .addTo(map);
+          });
+
+          setMapReady(true);
+        }
+      };
+      document.body.appendChild(script);
+    }
+  }, [currentPage, mapReady]);
 
   const getWeatherCondition = (code) => {
     if (code === 0) return 'Clear';
@@ -181,54 +230,13 @@ const HuaHinWatch = () => {
           </div>
         )}
 
-        {/* POWER STATUS - INTERACTIVE MAP */}
+        {/* POWER STATUS - LEAFLET MAP */}
         {currentPage === 'power_status' && (
           <div>
             <h2 style={{ fontSize: '2rem', fontWeight: '700', margin: '0 0 30px 0' }}>⚡ Power Status Map</h2>
             
             {/* LEAFLET MAP */}
-            <div style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', marginBottom: '30px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', height: '500px', position: 'relative' }}>
-              <div id="map" style={{ width: '100%', height: '100%', background: '#e0e0e0' }}>
-                <svg style={{ width: '100%', height: '100%' }} viewBox="0 0 800 500">
-                  {/* Light map background */}
-                  <rect width="800" height="500" fill="#e8f4f8" />
-                  
-                  {/* Simplified coast outline */}
-                  <path d="M 0,200 Q 50,150 100,180 T 200,200 L 200,0 L 0,0 Z" fill="#d4e8f0" stroke="#999" strokeWidth="1" />
-                  
-                  {/* Hua Hin coast */}
-                  <path d="M 200,200 L 700,250 L 700,500 L 200,500 Z" fill="#c8e0eb" />
-                  <path d="M 200,200 L 700,250" stroke="#999" strokeWidth="1" />
-                  
-                  {/* Grid/reference */}
-                  <line x1="200" y1="0" x2="200" y2="500" stroke="#ddd" strokeWidth="1" />
-                  
-                  {/* Area markers with status colors */}
-                  {huaHinAreas.map(area => {
-                    const x = 250 + (area.lng - 100.0) * 200;
-                    const y = 250 + (12.6 - area.lat) * 100;
-                    return (
-                      <g key={area.id}>
-                        <circle cx={x} cy={y} r="18" fill={getStatusColor(area.status)} opacity="0.8" />
-                        <circle cx={x} cy={y} r="18" fill="none" stroke={getStatusColor(area.status)} strokeWidth="2" />
-                        <text x={x} y={y + 25} textAnchor="middle" fontSize="11" fontWeight="600" fill="#333">{area.name.split(' ')[0]}</text>
-                      </g>
-                    );
-                  })}
-                  
-                  {/* Legend */}
-                  <g>
-                    <text x="20" y="40" fontSize="14" fontWeight="600" fill="#333">Status</text>
-                    <circle cx="30" cy="60" r="8" fill="#10b981" />
-                    <text x="45" y="65" fontSize="12" fill="#333">Normal</text>
-                    <circle cx="30" cy="85" r="8" fill="#f59e0b" />
-                    <text x="45" y="90" fontSize="12" fill="#333">Warning</text>
-                    <circle cx="30" cy="110" r="8" fill="#ef4444" />
-                    <text x="45" y="115" fontSize="12" fill="#333">Outage</text>
-                  </g>
-                </svg>
-              </div>
-            </div>
+            <div id="map" style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', marginBottom: '30px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', height: '500px', width: '100%' }}></div>
 
             {/* AREA GRID */}
             <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: '0 0 20px 0' }}>Area Details</h3>
