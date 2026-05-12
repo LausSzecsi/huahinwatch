@@ -26,7 +26,6 @@ const HuaHinWatch = () => {
     const now = new Date();
     const hour = now.getHours();
     const minute = now.getMinutes();
-    const currentMinutes = hour * 60 + minute;
 
     // Hua Hin typical tide pattern (semi-diurnal)
     const tides = [
