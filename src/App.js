@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Cloud, Zap, AlertTriangle, Navigation, TrendingUp, MapPin, Bell, X, RefreshCw, Video, Maximize2, Droplets, Wind, Eye } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Cloud, Zap, AlertTriangle, Navigation, Bell, X, Droplets, Wind } from 'lucide-react';
 
 const HuaHinWatch = () => {
   const [selectedTab, setSelectedTab] = useState('weather');
@@ -8,7 +8,6 @@ const HuaHinWatch = () => {
   const [trafficData, setTrafficData] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [time, setTime] = useState(new Date());
-  const [loading, setLoading] = useState(true);
 
   // Live webcams from ITAC
   const webcams = [
@@ -72,7 +71,6 @@ const HuaHinWatch = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
         
         // Fetch from Open-Meteo (FREE, NO API KEY NEEDED!)
         const weatherRes = await fetch(
@@ -131,10 +129,8 @@ const HuaHinWatch = () => {
           severity: 'normal',
         });
 
-        setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
-        setLoading(false);
         addNotification({
           type: 'error',
           title: '⚠️ Data Error',
