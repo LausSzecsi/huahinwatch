@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Cloud, Zap, AlertTriangle, Navigation, Bell, X, Droplets, Wind } from 'lucide-react';
+import { Cloud, AlertTriangle, Bell, Droplets, Wind } from 'lucide-react';
 
 const HuaHinWatch = () => {
   const [selectedTab, setSelectedTab] = useState('weather');
@@ -99,12 +99,6 @@ const HuaHinWatch = () => {
     return '🌤️';
   };
 
-  const addNotification = (notif) => {
-    const id = Date.now();
-    const newNotif = { ...notif, id };
-    setNotifications(prev => [newNotif, ...prev]);
-    setTimeout(() => { setNotifications(prev => prev.filter(n => n.id !== id)); }, 8000);
-  };
 
   const getTrafficColor = (level) => {
     const colors = ['#10b981', '#f59e0b', '#ef4444', '#991b1b'];
