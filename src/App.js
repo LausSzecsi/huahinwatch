@@ -6,6 +6,7 @@ const HuaHinWatch = () => {
   const [weatherData, setWeatherData] = useState(null);
   const [powerOutages, setPowerOutages] = useState([]);
   const [trafficData, setTrafficData] = useState(null);
+  const [notifications] = useState([]);
   const [time, setTime] = useState(new Date());
 
   const webcams = [
