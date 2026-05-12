@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Cloud, MapPin, AlertTriangle, Bell, Home, Zap, MessageSquare, BookOpen, Plane } from 'lucide-react';
+import { Home, Zap, MessageSquare, BookOpen, Plane } from 'lucide-react';
 
 const HuaHinWatch = () => {
   const [currentPage, setCurrentPage] = useState('home');
