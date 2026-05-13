@@ -107,7 +107,7 @@ const HuaHinWatch = () => {
       };
       document.body.appendChild(script);
     }
-  }, [currentPage, mapReady]);
+  }, [currentPage, mapReady, huaHinAreas]);
 
   const getWeatherCondition = (code) => {
     if (code === 0) return 'Clear';
