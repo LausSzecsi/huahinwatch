@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 const HuaHinWatch = () => {
   const [currentPage, setCurrentPage] = useState('home');
@@ -7,7 +7,7 @@ const HuaHinWatch = () => {
   const [newReport, setNewReport] = useState({ area: '', description: '', time: '' });
   const [mapReady, setMapReady] = useState(false);
 
-  const huaHinAreas = [
+  const huaHinAreas = useMemo(() => [
     { id: 1, name: 'Decathlon Beach', lat: 12.551, lng: 100.058, status: 'normal' },
     { id: 2, name: 'Petchkasem Rd North', lat: 12.560, lng: 100.062, status: 'warning' },
     { id: 3, name: 'Night Bazaar', lat: 12.555, lng: 100.065, status: 'normal' },
@@ -16,7 +16,7 @@ const HuaHinWatch = () => {
     { id: 6, name: 'Cicada Market', lat: 12.558, lng: 100.062, status: 'normal' },
     { id: 7, name: 'City Center', lat: 12.555, lng: 100.060, status: 'normal' },
     { id: 8, name: 'Railway Station', lat: 12.548, lng: 100.055, status: 'warning' },
-  ];
+  ], []);
 
   const getTideData = () => {
     const now = new Date();
